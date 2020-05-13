@@ -1,6 +1,6 @@
 platform: iOS
 buildPlatform:
-displayName: "Xcode Archive & Export"
+displayName: "Xcodebuild for Devices"
 description: "Build your application for iOS devices in ARM architecture (required for the  Share with Testers feature)."
 inputs:
 - key: "AC_REPOSITORY_DIR"
