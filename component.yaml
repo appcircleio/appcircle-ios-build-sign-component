@@ -90,14 +90,17 @@ inputs:
   helpText:
 outputs:
 - key: "AC_ARCHIVE_PATH"
+  title: Archive Path
   defaultValue: "AC_ARCHIVE_PATH"
   description: Archive path.
   helpText:
 - key: "AC_ARCHIVE_METADATA_PATH"
+  title: Archive Metadata Path
   defaultValue: "AC_ARCHIVE_METADATA_PATH"
   description: Archive metadata path.
   helpText:
 - key: "AC_EXPORT_DIR"
+  title: Export Directory
   defaultValue: "AC_EXPORT_DIR"
   description: Specifies the directory that contains ipa, exportOptions.plist, and other exported files.
   helpText:
