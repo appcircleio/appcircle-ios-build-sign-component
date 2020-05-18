@@ -20,12 +20,6 @@ $project_path = env_has_key("AC_PROJECT_PATH")
 $scheme = env_has_key("AC_SCHEME")
 $repository_path = ENV["AC_REPOSITORY_DIR"]
 
-$xcode_list_path = env_has_key("AC_XCODE_LIST_DIR")
-$xcode_version = env_has_key("AC_XCODE_VERSION")
-xcode_build_path = "#{$xcode_list_path}/#{$xcode_version}/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
-$xcodebuildPath = File.file?(xcode_build_path) ? xcode_build_path : abort("Missing xcodebuild path.")
-ENV["XCODE_DEVELOPER_DIR_PATH"] = "#{$xcode_list_path}/#{$xcode_version}/Xcode.app/Contents/Developer"
-
 $project_full_path = $repository_path ? (Pathname.new $repository_path).join($project_path) : $project_path
 
 $configuration_name = (ENV["AC_CONFIGURATION_NAME"] != nil && ENV["AC_CONFIGURATION_NAME"] !="") ? ENV["AC_CONFIGURATION_NAME"] : nil
@@ -328,7 +322,7 @@ def get_project_path
       workspace.file_references.each do |file|
 
         file_full_path = (Pathname.new File.dirname($project_full_path)).join(file.path)
-        command_read_schemes = "#$xcodebuildPath -project #{file_full_path} -list"
+        command_read_schemes = "xcodebuild -project #{file_full_path} -list"
         puts command_read_schemes
         schemes_string, stderr_str, status = Open3.capture3(command_read_schemes)
         unless status.success?
@@ -432,7 +426,7 @@ def generate_export_options(provisioning_profile_array)
 end
 
 def export_archive(export_options)
-  command_export = "#$xcodebuildPath -exportArchive -archivePath #$archive_path -exportPath #$output_path -exportOptionsPlist #{export_options}"
+  command_export = "xcodebuild -exportArchive -archivePath #$archive_path -exportPath #$output_path -exportOptionsPlist #{export_options}"
   run_command(command_export,false);
 
   begin
@@ -448,7 +442,7 @@ end
 ### Archive Functions
 def archive()
   extname = File.extname($project_path)
-  command = "#{$xcodebuildPath} -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\""
+  command = "xcodebuild -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\""
   
   if $is_sign_available
     command.concat(" ")

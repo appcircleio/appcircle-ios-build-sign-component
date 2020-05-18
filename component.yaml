@@ -9,12 +9,6 @@ inputs:
   title: Repository Directory
   description: Specifies the cloned repository directory.
   helpText:
-- key: "AC_XCODE_LIST_DIR"
-  defaultValue: "$AC_XCODE_LIST_DIR"
-  isRequired: true
-  title: Xcode List Directory
-  description: "Specifies the xcode folder list directory. Current xcode folder structure examples : /Applications/Xcode/10.3/Xcode or /Applications/Xcode/11.0/Xcode"
-  helpText:
 - key: "AC_SCHEME"
   defaultValue: "$AC_SCHEME"
   isRequired: true
@@ -32,12 +26,6 @@ inputs:
   isRequired: true
   title: Project Path
   description: "Specifies the project path. For example : ./appcircle.xcodeproj"
-  helpText:
-- key: "AC_XCODE_VERSION"
-  defaultValue: "$AC_XCODE_VERSION"
-  isRequired: true
-  title: Xcode Version
-  description: Specifies the xcode version.
   helpText:
 - key: "AC_CERTIFICATES"
   defaultValue: "$AC_CERTIFICATES"
