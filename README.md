@@ -1,6 +1,7 @@
 # Appcircle Xcodebuild For Devices
 
-This step will build your application for iOS devices in ARM architecture which is required for the Share With Testers feature.
+This step builds your application for iOS devices in ARM architecture, which is required for the Share With Testers feature or any other means of iOS distribution.
+
 Xcodebuild For Devices step will run Xcodebuild command for your application. Appcircle will use the parameters like project path, scheme and Xcode version specified in your build configuration to run your build.
 
 Required Input Variables
