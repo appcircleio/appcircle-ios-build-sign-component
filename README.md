@@ -1,4 +1,4 @@
-# Appcircle Xcodebuild For Devices
+# Appcircle Xcodebuild for Devices
 
 This step builds your application for iOS devices in ARM architecture, which is required for the Share With Testers feature or any other means of iOS distribution.
 
