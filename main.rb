@@ -121,19 +121,19 @@ def create_keychain()
   keychain_path = "#$temporary_path/#{SecureRandom.uuid}.keychain"
   keychain_password = [*('a'..'z'),*('0'..'9')].shuffle[0,16].join
 
-  command_create_keychain = "security create-keychain -p #{keychain_password} #{keychain_path}"
+  command_create_keychain = "security create-keychain -p #{keychain_password} \"#{keychain_path}\""
     run_command(command_create_keychain,false)
   
-    command_set_settings = "security set-keychain-settings #{keychain_path}"
+    command_set_settings = "security set-keychain-settings \"#{keychain_path}\""
     run_command(command_set_settings,false)
   
-    command_unlock_keychain = "security unlock-keychain -p #{keychain_password} #{keychain_path}"
+    command_unlock_keychain = "security unlock-keychain -p #{keychain_password} \"#{keychain_path}\""
     run_command(command_unlock_keychain,false)
 
     command_list = "security list-keychain -d user"
     run_command(command_list,false)
   
-    command_list_s = "security list-keychain -d user -s $(security list-keychains -d user | sed -e s/\\\"//g) #{keychain_path}"
+    command_list_s = "security list-keychain -d user -s $(security list-keychains -d user | sed -e s/\\\"//g) \"#{keychain_path}\""
     run_command(command_list_s,false)
   
     command_list2 = "security list-keychain -d user"
@@ -157,7 +157,7 @@ def import_certificate(keychain_path)
   end
 
   cert_array.each_with_index do |data,index|
-    command_import_certificate = "security import #{data["certificate"]} -P \"#{data["password"]}\" -A -t cert -f pkcs12 -k #{keychain_path}"
+    command_import_certificate = "security import #{data["certificate"]} -P \"#{data["password"]}\" -A -t cert -f pkcs12 -k \"#{keychain_path}\""
     run_command(command_import_certificate,false)
   end
 
@@ -208,7 +208,7 @@ end
 
 ### Remove Certificate & Provisioning
 def remove_keychain(keychain_path)
-  command_delete = "security delete-keychain #{keychain_path}"
+  command_delete = "security delete-keychain \"#{keychain_path}\""
   run_command(command_delete,true)
 end
 
@@ -322,7 +322,7 @@ def get_project_path
       workspace.file_references.each do |file|
 
         file_full_path = (Pathname.new File.dirname($project_full_path)).join(file.path)
-        command_read_schemes = "xcodebuild -project #{file_full_path} -list"
+        command_read_schemes = "xcodebuild -project \"#{file_full_path}\" -list"
         puts command_read_schemes
         schemes_string, stderr_str, status = Open3.capture3(command_read_schemes)
         unless status.success?
@@ -426,7 +426,7 @@ def generate_export_options(provisioning_profile_array)
 end
 
 def export_archive(export_options)
-  command_export = "xcodebuild -exportArchive -archivePath #$archive_path -exportPath #$output_path -exportOptionsPlist #{export_options}"
+  command_export = "xcodebuild -exportArchive -archivePath \"#$archive_path\" -exportPath \"#$output_path\" -exportOptionsPlist \"#{export_options}\""
   run_command(command_export,false);
 
   begin
