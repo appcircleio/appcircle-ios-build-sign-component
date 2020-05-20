@@ -508,7 +508,8 @@ def generate_archive_metadata()
   else
     abort('Archive path not found.')
   end
-  object = {"bundleIdentifiers" => bundle_identifiers, "xcodeVersion" => "#{$xcode_version}", "scheme" => "#{$scheme}"}
+  xcode_version = `xcodebuild -version`.split(' ')[1].chomp
+  object = {"bundleIdentifiers" => bundle_identifiers, "xcodeVersion" => "#{xcode_version}", "scheme" => "#{$scheme}"}
   File.open("#{$metadata_path}","w") do |f|
     f.write(object.to_json)
   end
