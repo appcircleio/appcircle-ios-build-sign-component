@@ -47,7 +47,7 @@ $icloudcontainerenvironment_for_export = (ENV["AC_ICLOUD_CONTAINER_ENVIRONMENT_F
 $extra_options = []
 
 if ENV["AC_ARCHIVE_FLAGS"] != "" && ENV["AC_ARCHIVE_FLAGS"] != nil
-  $extra_options = ENV["AC_ARCHIVE_FLAGS"].split(",")
+  $extra_options = ENV["AC_ARCHIVE_FLAGS"].split("|")
 end
 
 $archive_path = "#{$output_path}/build.xcarchive"
@@ -60,7 +60,7 @@ end
 
 $is_sign_available = true
 # AC_CERTIFICATES
-# "password\t/Users/..\tpassword\t/Users/.."
+# "password|/Users/..|password|/Users/.."
 if  ENV["AC_CERTIFICATES"] == nil || ENV["AC_CERTIFICATES"] ==""
   puts "Doesn't Sign : Missing AC_CERTIFICATES."
   $is_sign_available = false
@@ -146,7 +146,7 @@ def import_certificate(keychain_path)
   cert_string = $certificates
 
   cert_array = []
-  split_cert_string = cert_string.split("\t")
+  split_cert_string = cert_string.split("|")
   
   split_cert_length = split_cert_string.length
   x = 0
@@ -168,8 +168,8 @@ def import_provisioning_profile()
   provisioning_profiles_string = $provisioning_profiles
   bundle_identifiers_string = $bundle_identifiers
 
-  provisioning_profile_array = provisioning_profiles_string.split("\t")
-  bundle_identifiers_array = bundle_identifiers_string.split("\t")
+  provisioning_profile_array = provisioning_profiles_string.split("|")
+  bundle_identifiers_array = bundle_identifiers_string.split("|")
 
   provisioning_object_array = []
 
