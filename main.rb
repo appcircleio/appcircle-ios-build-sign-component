@@ -171,18 +171,18 @@ def import_provisioning_profile()
   provisioning_profile_array = provisioning_profiles_string.split("|")
   bundle_identifiers_array = bundle_identifiers_string.split("|")
 
-  provisioning_object_array = []
+  bundle_provisioning_object_array = []
 
   provisioning_profile_array.each_with_index do |profile,index|
     profile = {"bundleIdentifier" => "#{bundle_identifiers_array[index]}", "provisioningProfile"=> "#{profile}"}
-    provisioning_object_array.push(profile)
+    bundle_provisioning_object_array.push(profile)
   end
 
   unless File.directory?(ENV['HOME'] + '/Library/MobileDevice')
     FileUtils.mkdir_p ENV['HOME']+'/Library/MobileDevice/Provisioning Profiles'
   end
   
-  provisioning_object_array.each_with_index do |data,index|
+  bundle_provisioning_object_array.each_with_index do |data,index|
   
     provisioning_profile_plist = "#{File.dirname(data["provisioningProfile"])}/_xcodeprovisioningprofiletmp.plist"
     command_cms = "security cms -D -i #{data["provisioningProfile"]}"
@@ -197,13 +197,13 @@ def import_provisioning_profile()
     command_copy = "cp -f #{data["provisioningProfile"]} ~/Library/MobileDevice/Provisioning\\ Profiles/#{uuid}.mobileprovision"
     run_command(command_copy,false)
     
-    provisioning_object_array[index]["uuid"] = uuid
+    bundle_provisioning_object_array[index]["uuid"] = uuid
   
   end
   
-  puts "Provisioning Profiles : #{provisioning_object_array}"
+  puts "Provisioning Profiles : #{bundle_provisioning_object_array}"
 
-  return provisioning_object_array
+  return bundle_provisioning_object_array
 end
 
 ### Remove Certificate & Provisioning
@@ -225,8 +225,8 @@ def remove_keychain_provisioning_profile()
     remove_keychain($keychain_path)
   end
   
-  if $provisioning_profile_array != nil
-    remove_provisioning_profiles($provisioning_profile_array)
+  if $bundle_identifiers_provisioning_profiles != nil
+    remove_provisioning_profiles($bundle_identifiers_provisioning_profiles)
   end
 end
 
@@ -257,7 +257,7 @@ def update_build_settings()
     proj_path = get_project_path
     xcproj = Xcodeproj::Project.open(proj_path)
 
-    $provisioning_profile_array.each_with_index do |data, index|
+    $bundle_identifiers_provisioning_profiles.each_with_index do |data, index|
 
       xcproj.native_targets.each { |target| 
         if data["bundleIdentifier"] == get_bundle_identifier(target)
@@ -344,32 +344,40 @@ def get_project_path
 end
 
 ###### Export Options & Export Archive
-def generate_export_options(provisioning_profile_array)
-  profile_array = provisioning_profile_array.clone
+def generate_export_options()
   expOptProvisioningProfilePlist = "_xcodeExpOptProvisioningProfiletmp.plist"
   exportOptionsPlist = "_xcodeExportOptionstmp.plist"
-  
-  #profile_array[0]["provisioningProfile"] must be main provisioning profile
-  #profile_array[0]["bundleIdentifier"] must be main bundle identifier
-  main_provisioning_data = profile_array.shift
-  main_provisioning_profile = main_provisioning_data["provisioningProfile"]
-  main_bundle_identifier = main_provisioning_data["bundleIdentifier"]
-  
-  command_provisioning_plist = "security cms -D -i #{main_provisioning_profile} > #{File.dirname(main_provisioning_profile)}/#{expOptProvisioningProfilePlist}"
-  run_command(command_provisioning_plist,false);
-  
-  main_provisioning_plist = Plist.parse_xml("#{File.dirname(main_provisioning_profile)}/#{expOptProvisioningProfilePlist}")
-  
   export_options = {}
+
+  ######Provisioning Profile
+  applications_path = "#{$archive_path}/Products/Applications"
+  bundle_identifiers, provisioning_profiles = get_bundle_identifiers_and_embedded_provisioning_profiles(applications_path)
+
+  provisioning_profile_object = {}
+  application_profile_plist = nil
+  provisioning_profiles.each_with_index do |data, index|
+    command_provisioning_plist = "security cms -D -i #{data} > #{$temporary_path}/_#{index}#{expOptProvisioningProfilePlist}"
+    run_command(command_provisioning_plist,false);
+  
+    provisioning_plist = Plist.parse_xml("#{$temporary_path}/_#{index}#{expOptProvisioningProfilePlist}")
+    if index == 0
+      application_profile_plist = provisioning_plist
+    end
+    provisioning_profile_object[bundle_identifiers[index]] = provisioning_plist['UUID']
+  end
+  export_options['provisioningProfiles'] = provisioning_profile_object
+  #####################
+
+
   export_options['signingStyle'] = :manual
   export_options['destination'] = :export
   
   if $method_for_export == 'auto-detect'
-    if main_provisioning_plist['Entitlements']['get-task-allow']
+    if application_profile_plist['Entitlements']['get-task-allow']
       export_options['method'] = "development"
-    elsif main_provisioning_plist['ProvisionsAllDevices']
+    elsif application_profile_plist['ProvisionsAllDevices']
       export_options['method'] = "enterprise"
-    elsif main_provisioning_plist['ProvisionedDevices']
+    elsif application_profile_plist['ProvisionedDevices']
       export_options['method'] = "ad-hoc"
     else
       export_options['method'] = "app-store"
@@ -381,7 +389,7 @@ def generate_export_options(provisioning_profile_array)
   if $teamid_for_export != nil
     export_options['teamID'] = $teamid_for_export
   end
-  # export_options['teamID'] = main_provisioning_plist['TeamIdentifier'][0]
+  # export_options['teamID'] = application_profile_plist['TeamIdentifier'][0]
 
   unless export_options['method'] == "app-store"
     if $compile_bitcode_for_export == "YES"
@@ -404,20 +412,7 @@ def generate_export_options(provisioning_profile_array)
       export_options['uploadSymbols'] = false
     end
   end
-  
-  
-  provisioning_profile_object = {}
-  provisioning_profile_object[main_bundle_identifier] = main_provisioning_plist['UUID']
-  
-  profile_array.each_with_index do |data, index|
-    command_provisioning_plist = "security cms -D -i #{data["provisioningProfile"]} > #{File.dirname(data["provisioningProfile"])}/_#{index}#{expOptProvisioningProfilePlist}"
-    run_command(command_provisioning_plist,false);
-  
-    provisioning_plist = Plist.parse_xml("#{File.dirname(data["provisioningProfile"])}/_#{index}#{expOptProvisioningProfilePlist}")
-    provisioning_profile_object[data["bundleIdentifier"]] = provisioning_plist['UUID']
-  end
-  
-  export_options['provisioningProfiles'] = provisioning_profile_object
+
   puts "\nExport Options : \n#{export_options}\n\n"
   plist_path = "#{$temporary_path}/#{exportOptionsPlist}"
   export_options.save_plist(plist_path)
@@ -484,27 +479,37 @@ def archive()
   run_command(command,false)
 end
 
-def get_bundle_identifiers(path)
+def get_bundle_identifiers_and_embedded_provisioning_profiles(path)
   identifiers = []
+  embedded_provisioning_profiles = []
   Dir.chdir(path) do
     Dir.glob('*').select { |product| 
       plist = "#{product}/Info.plist"
       command_uuid = "/usr/libexec/PlistBuddy -c \"Print CFBundleIdentifier\" \"#{plist}\""
       identifier = `#{command_uuid}`.chomp
       identifiers << identifier
+
+      if File.file?("#{product}/embedded.mobileprovision")
+        embedded_provisioning_profiles  << "#{Dir.pwd}/#{product}/embedded.mobileprovision"
+      else
+        embedded_provisioning_profiles  << nil
+      end
+
       if File.directory?("#{product}/PlugIns")
-        identifiers.concat(get_bundle_identifiers("#{product}/PlugIns"))
+        ids, profiles = get_bundle_identifiers_and_embedded_provisioning_profiles("#{product}/PlugIns")
+        identifiers.concat(ids)
+        embedded_provisioning_profiles.concat(profiles)
       end
     }
   end
-  return identifiers
+  return identifiers, embedded_provisioning_profiles
 end
 
 def generate_archive_metadata()
   bundle_identifiers = []
   if File.directory?($archive_path)
     applications_path = "#{$archive_path}/Products/Applications"
-    bundle_identifiers.concat(get_bundle_identifiers(applications_path))
+    bundle_identifiers.concat(get_bundle_identifiers_and_embedded_provisioning_profiles(applications_path)[0])
   else
     abort('Archive path not found.')
   end
@@ -520,7 +525,7 @@ end
 if $is_sign_available
   $keychain_path,$keychain_password = create_keychain()
   $certificate_array = import_certificate($keychain_path)
-  $provisioning_profile_array = import_provisioning_profile()
+  $bundle_identifiers_provisioning_profiles = import_provisioning_profile()
   update_build_settings()
 end
 
@@ -528,7 +533,7 @@ archive()
 generate_archive_metadata()
 
 if $is_sign_available
-  export_options = generate_export_options($provisioning_profile_array)
+  export_options = generate_export_options()
   export_archive(export_options)
   remove_keychain_provisioning_profile()
 end
