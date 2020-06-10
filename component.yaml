@@ -68,7 +68,6 @@ inputs:
   description: The Developer Portal team to use for this export. Defaults to the team used to build the archive.
   helpText:
 - key: "AC_COMPILE_BITCODE_FOR_EXPORT"
-  defaultValue: "NO"
   isRequired: false
   title: Export Compile Bitcode
   description: For non-App Store exports, should Xcode re-compile the app from bitcode? Available options YES, NO.
