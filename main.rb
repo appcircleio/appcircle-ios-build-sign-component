@@ -356,7 +356,7 @@ def generate_export_options()
   provisioning_profile_object = {}
   application_profile_plist = nil
   provisioning_profiles.each_with_index do |data, index|
-    command_provisioning_plist = "security cms -D -i #{data} > #{$temporary_path}/_#{index}#{expOptProvisioningProfilePlist}"
+    command_provisioning_plist = "security cms -D -i \"#{data}\" > \"#{$temporary_path}/_#{index}#{expOptProvisioningProfilePlist}\""
     run_command(command_provisioning_plist,false);
   
     provisioning_plist = Plist.parse_xml("#{$temporary_path}/_#{index}#{expOptProvisioningProfilePlist}")
