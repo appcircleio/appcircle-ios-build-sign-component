@@ -258,50 +258,39 @@ def update_build_settings()
     xcproj = Xcodeproj::Project.open(proj_path)
 
     $bundle_identifiers_provisioning_profiles.each_with_index do |data, index|
-
       xcproj.native_targets.each { |target| 
-        if data["bundleIdentifier"] == get_bundle_identifier(target)
-          command_provisioning_plist = "security cms -D -i #{data["provisioningProfile"]} > #{File.dirname(data["provisioningProfile"])}/_#{index}#{manualProvisioningProfilePlist}"
-          run_command(command_provisioning_plist,true);
-          provisioning_plist = Plist.parse_xml("#{File.dirname(data["provisioningProfile"])}/_#{index}#{manualProvisioningProfilePlist}")
+      	target.build_configurations.each { |configuration| 
+      		if data["bundleIdentifier"] == configuration.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
 
-          target.build_configurations.each do |item|
-            item.build_settings['CODE_SIGN_IDENTITY'] = $code_sign_identity
-          end
+      			provisioning_plist_path = "#{File.dirname(data["provisioningProfile"])}/_#{index}#{manualProvisioningProfilePlist}"
+      			unless File.exist?(provisioning_plist_path)
+      				command_provisioning_plist = "security cms -D -i #{data["provisioningProfile"]} > #{provisioning_plist_path}"
+          			run_command(command_provisioning_plist,true);
+      			end
+          		provisioning_plist = Plist.parse_xml("#{provisioning_plist_path}")
 
-          target.build_configurations.each do |item|
-            item.build_settings['CODE_SIGN_IDENTITY[sdk=iphoneos*]'] = $code_sign_identity
-          end 
-          
-          target.build_configurations.each do |item|
-            item.build_settings['PROVISIONING_PROFILE'] = provisioning_plist['UUID']
-          end
+          		configuration.build_settings['CODE_SIGN_IDENTITY'] = $code_sign_identity
+          		configuration.build_settings['CODE_SIGN_IDENTITY[sdk=iphoneos*]'] = $code_sign_identity
+          		configuration.build_settings['PROVISIONING_PROFILE'] = provisioning_plist['UUID']
+          		configuration.build_settings['PROVISIONING_PROFILE[sdk=iphoneos*]'] = provisioning_plist['UUID']
+          		configuration.build_settings['CODE_SIGN_STYLE'] = "Manual"
+          		configuration.build_settings['DEVELOPMENT_TEAM'] = $code_sign_development_team
 
-          target.build_configurations.each do |item|
-            item.build_settings['PROVISIONING_PROFILE[sdk=iphoneos*]'] = provisioning_plist['UUID']
-          end
+	          	puts "------------------------------------------------------"
 
-          target.build_configurations.each do |item|
-            item.build_settings['CODE_SIGN_STYLE'] = "Manual"
-          end
+	          	puts "Target Name : #{target.name}"
+	          	puts "Target Build Configuration : #{configuration.name}"
+				puts "Bundle Identifier : #{data["bundleIdentifier"]}"
+				puts "Code Sign Identity : #{$code_sign_identity}"
+				puts "Provisioning Profile : #{provisioning_plist['UUID']}"
+				puts "Development Team : #{$code_sign_development_team}"
+				puts "Code Sign Style : Manual"
 
-          target.build_configurations.each do |item|
-            item.build_settings['DEVELOPMENT_TEAM'] = $code_sign_development_team
-          end
+				puts "------------------------------------------------------"
 
-          puts "\n"
-
-          puts "Bundle Identifier : #{data["bundleIdentifier"]}"
-          puts "Code Sign Identity : #{$code_sign_identity}"
-          puts "Provisioning Profile : #{provisioning_plist['UUID']}"
-          puts "Development Team : #{$code_sign_development_team}"
-          puts "Code Sign Style : Manual"
-
-          puts "\n"
-
-        end
+      		end
+      	}
       }
-
     end
 
     xcproj.save
@@ -309,10 +298,6 @@ def update_build_settings()
   rescue Exception => e
     abort_script(e)
   end
-end
-
-def get_bundle_identifier(target)
-    return target.build_configuration_list.build_settings(target.build_configuration_list.default_configuration_name)["PRODUCT_BUNDLE_IDENTIFIER"]
 end
 
 def get_project_path
