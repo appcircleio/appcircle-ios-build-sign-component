@@ -15,7 +15,7 @@ end
 
 $temporary_path = env_has_key("AC_TEMP_DIR")
 $temporary_path += "/appcircle_export_archive"
-$output_path = env_has_key("AC_OUTPUT_DIR")
+$output_path = env_has_key("AC_OUTPUT_DIR_PATH")
 $project_path = env_has_key("AC_PROJECT_PATH")
 $scheme = env_has_key("AC_SCHEME")
 $repository_path = ENV["AC_REPOSITORY_DIR"]

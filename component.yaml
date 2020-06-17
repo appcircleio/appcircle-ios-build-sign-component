@@ -9,6 +9,12 @@ inputs:
   title: Repository Directory
   description: Specifies the cloned repository directory.
   helpText:
+- key: "AC_OUTPUT_DIR_PATH"
+  defaultValue: "$AC_OUTPUT_DIR"
+  isRequired: true
+  title: Output Directory Path
+  description: Specifies the path for outputs.
+  helpText:
 - key: "AC_SCHEME"
   defaultValue: "$AC_SCHEME"
   isRequired: true
