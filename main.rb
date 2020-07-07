@@ -269,24 +269,26 @@ def update_build_settings()
       			end
           		provisioning_plist = Plist.parse_xml("#{provisioning_plist_path}")
 
-          		configuration.build_settings['CODE_SIGN_IDENTITY'] = $code_sign_identity
-          		configuration.build_settings['CODE_SIGN_IDENTITY[sdk=iphoneos*]'] = $code_sign_identity
-          		configuration.build_settings['PROVISIONING_PROFILE'] = provisioning_plist['UUID']
-          		configuration.build_settings['PROVISIONING_PROFILE[sdk=iphoneos*]'] = provisioning_plist['UUID']
-          		configuration.build_settings['CODE_SIGN_STYLE'] = "Manual"
-          		configuration.build_settings['DEVELOPMENT_TEAM'] = $code_sign_development_team
+              configuration.build_settings['CODE_SIGN_IDENTITY'] = $code_sign_identity
+              configuration.build_settings['CODE_SIGN_IDENTITY[sdk=iphoneos*]'] = $code_sign_identity
+              configuration.build_settings['PROVISIONING_PROFILE'] = provisioning_plist['UUID']
+              configuration.build_settings['PROVISIONING_PROFILE[sdk=iphoneos*]'] = provisioning_plist['UUID']
+              configuration.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = provisioning_plist['Name']
+              configuration.build_settings['CODE_SIGN_STYLE'] = "Manual"
+              configuration.build_settings['DEVELOPMENT_TEAM'] = $code_sign_development_team
 
-	          	puts "------------------------------------------------------"
+              puts "------------------------------------------------------"
 
-	          	puts "Target Name : #{target.name}"
-	          	puts "Target Build Configuration : #{configuration.name}"
-				puts "Bundle Identifier : #{data["bundleIdentifier"]}"
-				puts "Code Sign Identity : #{$code_sign_identity}"
-				puts "Provisioning Profile : #{provisioning_plist['UUID']}"
-				puts "Development Team : #{$code_sign_development_team}"
-				puts "Code Sign Style : Manual"
+              puts "Target Name : #{target.name}"
+              puts "Target Build Configuration : #{configuration.name}"
+              puts "Bundle Identifier : #{data["bundleIdentifier"]}"
+              puts "Code Sign Identity : #{$code_sign_identity}"
+              puts "Provisioning Profile : #{provisioning_plist['UUID']}"
+              puts "Provisioning Profile Specifier: #{provisioning_plist['Name']}"
+              puts "Development Team : #{$code_sign_development_team}"
+              puts "Code Sign Style : Manual"
 
-				puts "------------------------------------------------------"
+              puts "------------------------------------------------------"
 
       		end
       	}
