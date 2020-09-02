@@ -110,39 +110,11 @@ def run_command(command,skip_abort)
 end
 
 def abort_script(error)
-  if $is_sign_available
-    remove_keychain_provisioning_profile()
-  end
   abort("#{error}")
 end
 
 ###### Import Certificate & Provisioning
-def create_keychain()
-  keychain_path = "#$temporary_path/#{SecureRandom.uuid}.keychain"
-  keychain_password = [*('a'..'z'),*('0'..'9')].shuffle[0,16].join
-
-  command_create_keychain = "security create-keychain -p #{keychain_password} \"#{keychain_path}\""
-    run_command(command_create_keychain,false)
-  
-    command_set_settings = "security set-keychain-settings \"#{keychain_path}\""
-    run_command(command_set_settings,false)
-  
-    command_unlock_keychain = "security unlock-keychain -p #{keychain_password} \"#{keychain_path}\""
-    run_command(command_unlock_keychain,false)
-
-    command_list = "security list-keychain -d user"
-    run_command(command_list,false)
-  
-    command_list_s = "security list-keychain -d user -s $(security list-keychains -d user | sed -e s/\\\"//g) \"#{keychain_path}\""
-    run_command(command_list_s,false)
-  
-    command_list2 = "security list-keychain -d user"
-  run_command(command_list2,false)
-  
-  return keychain_path,keychain_password
-end
-
-def import_certificate(keychain_path)
+def parse_certificate()
   cert_string = $certificates
 
   cert_array = []
@@ -156,15 +128,10 @@ def import_certificate(keychain_path)
     x += 2
   end
 
-  cert_array.each_with_index do |data,index|
-    command_import_certificate = "security import #{data["certificate"]} -P \"#{data["password"]}\" -A -t cert -f pkcs12 -k \"#{keychain_path}\""
-    run_command(command_import_certificate,false)
-  end
-
   return cert_array
 end
 
-def import_provisioning_profile()
+def parse_provisioning_profile()
   provisioning_profiles_string = $provisioning_profiles
   bundle_identifiers_string = $bundle_identifiers
 
@@ -178,10 +145,6 @@ def import_provisioning_profile()
     bundle_provisioning_object_array.push(profile)
   end
 
-  unless File.directory?(ENV['HOME'] + '/Library/MobileDevice')
-    FileUtils.mkdir_p ENV['HOME']+'/Library/MobileDevice/Provisioning Profiles'
-  end
-  
   bundle_provisioning_object_array.each_with_index do |data,index|
   
     provisioning_profile_plist = "#{File.dirname(data["provisioningProfile"])}/_xcodeprovisioningprofiletmp.plist"
@@ -193,9 +156,6 @@ def import_provisioning_profile()
     puts command_uuid
     uuid = `#{command_uuid}`.chomp
     puts uuid
-  
-    command_copy = "cp -f #{data["provisioningProfile"]} ~/Library/MobileDevice/Provisioning\\ Profiles/#{uuid}.mobileprovision"
-    run_command(command_copy,false)
     
     bundle_provisioning_object_array[index]["uuid"] = uuid
   
@@ -204,30 +164,6 @@ def import_provisioning_profile()
   puts "Provisioning Profiles : #{bundle_provisioning_object_array}"
 
   return bundle_provisioning_object_array
-end
-
-### Remove Certificate & Provisioning
-def remove_keychain(keychain_path)
-  command_delete = "security delete-keychain \"#{keychain_path}\""
-  run_command(command_delete,true)
-end
-
-def remove_provisioning_profiles(provisioning_profile_array)
-  provisioning_profile_array.each do |data|
-    path = "~/Library/MobileDevice/Provisioning\\ Profiles/#{data["uuid"]}.mobileprovision"
-    command_delete = "rm -f #{path}"
-    run_command(command_delete,true)
-  end
-end
-
-def remove_keychain_provisioning_profile()
-  if $keychain_path != nil
-    remove_keychain($keychain_path)
-  end
-  
-  if $bundle_identifiers_provisioning_profiles != nil
-    remove_provisioning_profiles($bundle_identifiers_provisioning_profiles)
-  end
 end
 
 ###### Update Build Settings With Code Sign
@@ -510,9 +446,8 @@ end
 ###############################################################
 
 if $is_sign_available
-  $keychain_path,$keychain_password = create_keychain()
-  $certificate_array = import_certificate($keychain_path)
-  $bundle_identifiers_provisioning_profiles = import_provisioning_profile()
+  $certificate_array = parse_certificate()
+  $bundle_identifiers_provisioning_profiles = parse_provisioning_profile()
   update_build_settings()
 end
 
@@ -522,7 +457,6 @@ generate_archive_metadata()
 if $is_sign_available
   export_options = generate_export_options()
   export_archive(export_options)
-  remove_keychain_provisioning_profile()
 end
 
 ###############################################################
