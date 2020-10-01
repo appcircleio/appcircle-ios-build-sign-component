@@ -423,6 +423,12 @@ def get_bundle_identifiers_and_embedded_provisioning_profiles(path)
         identifiers.concat(ids)
         embedded_provisioning_profiles.concat(profiles)
       end
+
+      if File.directory?("#{product}/Watch")
+        ids, profiles = get_bundle_identifiers_and_embedded_provisioning_profiles("#{product}/Watch")
+        identifiers.concat(ids)
+        embedded_provisioning_profiles.concat(profiles)
+      end
     }
   end
   return identifiers, embedded_provisioning_profiles
