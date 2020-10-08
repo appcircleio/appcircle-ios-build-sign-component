@@ -217,7 +217,8 @@ def update_build_settings()
 
               puts "Target Name : #{target.name}"
               puts "Target Build Configuration : #{configuration.name}"
-              puts "Bundle Identifier : #{data["bundleIdentifier"]}"
+              puts "Configuration Bundle Identifier : #{configuration.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]}"
+              puts "Signing Bundle Identifier : #{data["bundleIdentifier"]}"
               puts "Code Sign Identity : #{$code_sign_identity}"
               puts "Provisioning Profile : #{provisioning_plist['UUID']}"
               puts "Provisioning Profile Specifier: #{provisioning_plist['Name']}"
@@ -225,7 +226,15 @@ def update_build_settings()
               puts "Code Sign Style : Manual"
 
               puts "------------------------------------------------------"
+          else
+              puts "------------------------------------------------------"
 
+              puts "Target Name : #{target.name}"
+              puts "Target Build Configuration : #{configuration.name}"
+              puts "Configuration Bundle Identifier : #{configuration.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]}"
+              puts "Signing Bundle Identifier : #{data["bundleIdentifier"]}"
+
+              puts "------------------------------------------------------"
       		end
       	}
       }
