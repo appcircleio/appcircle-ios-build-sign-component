@@ -194,13 +194,14 @@ def update_build_settings()
     xcproj = Xcodeproj::Project.open(proj_path)
 
     $bundle_identifiers_provisioning_profiles.each_with_index do |data, index|
+      provisioningProfile = data["provisioningProfile"]
       xcproj.native_targets.each { |target| 
       	target.build_configurations.each { |configuration| 
       		if data["bundleIdentifier"] == configuration.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
 
-      			provisioning_plist_path = "#{File.dirname(data["provisioningProfile"])}/_#{index}#{manualProvisioningProfilePlist}"
+      			provisioning_plist_path = "#{File.dirname(provisioningProfile)}/_#{index}#{manualProvisioningProfilePlist}"
       			unless File.exist?(provisioning_plist_path)
-      				command_provisioning_plist = "security cms -D -i #{data["provisioningProfile"]} > #{provisioning_plist_path}"
+      				command_provisioning_plist = "security cms -D -i #{provisioningProfile} > #{provisioning_plist_path}"
           			run_command(command_provisioning_plist,true);
       			end
           		provisioning_plist = Plist.parse_xml("#{provisioning_plist_path}")
