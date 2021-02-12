@@ -85,6 +85,16 @@ else
   $bundle_identifiers = ENV["AC_BUNDLE_IDENTIFIERS"]
 end
 
+# Certificate and provision profile map
+$compatible_sign_files = {}
+$signing_match_array = JSON.parse(File.read("#{ENV["AC_TEMP_DIR"]}/provisioningprofileandcertificates"))
+
+$signing_match_array.each { |signing_files| 
+    $compatible_sign_files["#{signing_files["provisioningProfile"]}"] = "#{signing_files["cert"]}"
+}
+
+puts "Signing files: #{$compatible_sign_files}"
+
 ###### Run Command Function
 def run_command(command,skip_abort)
   puts "@@[command] #{command}"
@@ -117,18 +127,37 @@ end
 def parse_certificate()
   cert_string = $certificates
 
-  cert_array = []
+  cert_props = {}
   split_cert_string = cert_string.split("|")
   
   split_cert_length = split_cert_string.length
   x = 0
   while x < split_cert_length
-      cert = {"certificate" => "#{split_cert_string[x+1]}", "password"=> "#{split_cert_string[x]}"}
-    cert_array.push(cert)
+    certificate = "#{split_cert_string[x+1]}"
+    password = "#{split_cert_string[x]}"
+    command_read_certificate = "openssl pkcs12 -in #{certificate} -nokeys -passin pass:\"#{password}\" | openssl x509 -noout -subject"
+    certificate_description_string, stderr_str, status = Open3.capture3(command_read_certificate)
+    unless status.success?
+      raise stderr_str
+    end
+
+    certificate_description_splitted = certificate_description_string.split("/")
+    certificate_description_splitted.each { |item| 
+      item_splitted = item.split("=")
+      key = item_splitted[0]
+      value = item_splitted[1]
+
+      if key == "CN"
+        $code_sign_identity = value
+      elsif key == "OU"
+        $code_sign_development_team = value
+      end
+    }
+    cert_props["#{certificate}"] = { :code_sign_identity => "#{$code_sign_identity}", :code_sign_development_team => "#{$code_sign_development_team}"}
     x += 2
   end
 
-  return cert_array
+  return cert_props
 end
 
 def parse_provisioning_profile()
@@ -170,31 +199,19 @@ end
 def update_build_settings()
   begin
     manualProvisioningProfilePlist = "_xcodeManualProvisioningProfiletmp.plist"
-    command_read_certificate = "openssl pkcs12 -in #{$certificate_array[0]["certificate"]} -nokeys -passin pass:\"#{$certificate_array[0]["password"]}\" | openssl x509 -noout -subject"
-    puts command_read_certificate
-    certificate_description_string, stderr_str, status = Open3.capture3(command_read_certificate)
-    unless status.success?
-      raise stderr_str
-    end
-
-    certificate_description_splitted = certificate_description_string.split("/")
-    certificate_description_splitted.each { |item| 
-      item_splitted = item.split("=")
-      key = item_splitted[0]
-      value = item_splitted[1]
-
-      if key == "CN"
-        $code_sign_identity = value
-      elsif key == "OU"
-        $code_sign_development_team = value
-      end
-    }
 
     proj_path = get_project_path
     xcproj = Xcodeproj::Project.open(proj_path)
 
     $bundle_identifiers_provisioning_profiles.each_with_index do |data, index|
       provisioningProfile = data["provisioningProfile"]
+      certificate = $compatible_sign_files[provisioningProfile]
+      $certificate_props = $certificate_properties[certificate]
+
+      $code_sign_identity = $certificate_props[:code_sign_identity]
+      $code_sign_development_team = $certificate_props[:code_sign_development_team]
+      puts "code_sign_identity: #{$code_sign_identity}"
+      puts "code_sign_development_team: #{$code_sign_development_team}"
       xcproj.native_targets.each { |target| 
       	target.build_configurations.each { |configuration| 
       		if data["bundleIdentifier"] == configuration.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
@@ -462,7 +479,7 @@ end
 ###############################################################
 
 if $is_sign_available
-  $certificate_array = parse_certificate()
+  $certificate_properties = parse_certificate()
   $bundle_identifiers_provisioning_profiles = parse_provisioning_profile()
   update_build_settings()
 end
