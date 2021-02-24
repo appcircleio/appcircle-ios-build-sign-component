@@ -87,13 +87,6 @@ end
 
 # Certificate and provision profile map
 $compatible_sign_files = {}
-$signing_match_array = JSON.parse(File.read("#{ENV["AC_TEMP_DIR"]}/provisioningprofileandcertificates"))
-
-$signing_match_array.each { |signing_files| 
-    $compatible_sign_files["#{signing_files["provisioningProfile"]}"] = "#{signing_files["cert"]}"
-}
-
-puts "Signing files: #{$compatible_sign_files}"
 
 ###### Run Command Function
 def run_command(command,skip_abort)
@@ -479,6 +472,13 @@ end
 ###############################################################
 
 if $is_sign_available
+  $signing_match_array = JSON.parse(File.read("#{ENV["AC_TEMP_DIR"]}/provisioningprofileandcertificates"))
+
+  $signing_match_array.each { |signing_files| 
+      $compatible_sign_files["#{signing_files["provisioningProfile"]}"] = "#{signing_files["cert"]}"
+  }
+  puts "Signing files: #{$compatible_sign_files}"
+
   $certificate_properties = parse_certificate()
   $bundle_identifiers_provisioning_profiles = parse_provisioning_profile()
   update_build_settings()
