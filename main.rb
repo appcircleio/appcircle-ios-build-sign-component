@@ -380,7 +380,7 @@ end
 ### Archive Functions
 def archive()
   extname = File.extname($project_path)
-  command = "xcodebuild -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\""
+  command = "xcodebuild -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -destination \"generic/platform=iOS\""
   
   if $is_sign_available
     command.concat(" ")
