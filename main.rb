@@ -59,6 +59,13 @@ if File.extname($project_path) == ".xcworkspace"
 end
 
 $is_sign_available = true
+$is_automatic_sign = false
+
+if ENV["AC_AUTOSIGN_KEY"] != nil && ENV["AC_AUTOSIGN_KEY"] == "NO"
+  puts "Using automatic code signing"
+  $is_automatic_sign = true
+end
+
 # AC_CERTIFICATES
 # "password|/Users/..|password|/Users/.."
 if  ENV["AC_CERTIFICATES"] == nil || ENV["AC_CERTIFICATES"] ==""
@@ -386,6 +393,19 @@ def archive()
     command.concat(" ")
     command.concat("CODE_SIGN_STYLE=Manual")
     command.concat(" ")
+  elsif $is_automatic_sign
+    key_path = env_has_key("AC_AUTOSIGN_CRED_PATH")
+    key_id = env_has_key("AC_AUTOSIGN_KEY")
+    issuer_id = env_has_key("AC_AUTOSIGN_ISSUER_ID")
+    command.concat(" ")
+    command.concat("-allowProvisioningUpdates")
+    command.concat(" ")
+    command.concat("--authenticationKeyPath #{key_path}")
+    command.concat(" ")
+    command.concat("--authenticationKeyID #{key_id}")
+    command.concat(" ")
+    command.concat("--authenticationKeyIssuerID #{issuer_id}")
+    command.concat(" ")
   else
     command.concat(" ")
     command.concat("CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO")
@@ -471,6 +491,10 @@ end
 
 ###############################################################
 
+if $is_automatic_sign
+  $certificate_properties = parse_certificate()
+end
+
 if $is_sign_available
   $signing_match_array = JSON.parse(File.read("#{ENV["AC_TEMP_DIR"]}/provisioningprofileandcertificates"))
 
@@ -487,7 +511,7 @@ end
 archive()
 generate_archive_metadata()
 
-if $is_sign_available
+if $is_sign_available or $is_automatic_sign
   export_options = generate_export_options()
   export_archive(export_options)
 end
