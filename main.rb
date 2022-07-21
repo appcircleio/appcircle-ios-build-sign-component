@@ -61,7 +61,7 @@ end
 $is_sign_available = true
 $is_automatic_sign = false
 
-if ENV["AC_AUTOSIGN_KEY"] != nil && ENV["AC_AUTOSIGN_KEY"] == "NO"
+if ENV["AC_AUTOSIGN_KEY"] != nil && ENV["AC_AUTOSIGN_KEY"] != ""
   puts "Using automatic code signing"
   $is_automatic_sign = true
 end
