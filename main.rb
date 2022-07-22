@@ -339,6 +339,10 @@ def generate_export_options()
   else
     export_options['method'] = $method_for_export
   end
+
+  if $is_automatic_sign
+    export_options['method'] = env_has_key("AC_AUTOSIGN_METHOD_FOR_EXPORT")
+  end
   
   if $teamid_for_export != nil
     export_options['teamID'] = $teamid_for_export
