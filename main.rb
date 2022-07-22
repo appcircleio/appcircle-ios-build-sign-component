@@ -319,7 +319,11 @@ def generate_export_options()
   #####################
 
 
-  export_options['signingStyle'] = :manual
+  if $is_automatic_sign
+    export_options['signingStyle'] = :automatic
+  else
+    export_options['signingStyle'] = :manual
+  end
   export_options['destination'] = :export
   
   if $method_for_export == 'auto-detect'
@@ -372,6 +376,19 @@ end
 
 def export_archive(export_options)
   command_export = "xcodebuild -exportArchive -archivePath \"#$archive_path\" -exportPath \"#$output_path\" -exportOptionsPlist \"#{export_options}\""
+  if $is_automatic_sign
+    key_path = env_has_key("AC_AUTOSIGN_CRED_PATH")
+    key_id = env_has_key("AC_AUTOSIGN_KEY")
+    issuer_id = env_has_key("AC_AUTOSIGN_ISSUER_ID")
+    command_export.concat(" ")
+    command_export.concat("-allowProvisioningUpdates")
+    command_export.concat(" ")
+    command_export.concat("-authenticationKeyPath #{key_path}")
+    command_export.concat(" ")
+    command_export.concat("-authenticationKeyID #{key_id}")
+    command_export.concat(" ")
+    command_export.concat("-authenticationKeyIssuerID #{issuer_id}")
+  end
   run_command(command_export,false);
 
   begin
