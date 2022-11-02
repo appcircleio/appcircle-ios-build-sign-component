@@ -213,10 +213,11 @@ def update_build_settings()
       puts "code_sign_identity: #{$code_sign_identity}"
       puts "code_sign_development_team: #{$code_sign_development_team}"
       xcproj.native_targets.each { |target| 
-      	target.build_configurations.each { |configuration| 
-      		if data["bundleIdentifier"] == configuration.resolve_build_setting("PRODUCT_BUNDLE_IDENTIFIER")
-
-      			provisioning_plist_path = "#{File.dirname(provisioningProfile)}/_#{index}#{manualProvisioningProfilePlist}"
+      	target.build_configurations.each { |configuration|
+          config_bundle_id = configuration.resolve_build_setting("PRODUCT_BUNDLE_IDENTIFIER") 
+          if data["bundleIdentifier"] == config_bundle_id or ( data["bundleIdentifier"].include?(".*") and config_bundle_id.match(/#{data["bundleIdentifier"]}/)) 
+      			
+            provisioning_plist_path = "#{File.dirname(provisioningProfile)}/_#{index}#{manualProvisioningProfilePlist}"
       			unless File.exist?(provisioning_plist_path)
       				command_provisioning_plist = "security cms -D -i #{provisioningProfile} > #{provisioning_plist_path}"
           			run_command(command_provisioning_plist,true);
