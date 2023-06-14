@@ -511,16 +511,14 @@ def generate_archive_metadata()
   end
 end
 
-def delete_files_and_directories(folder_path)
-  puts "Deleting #{folder_path}"
-  Dir.glob("#{folder_path}/*").each do |entry|
-    puts "Entry #{entry}"
-    if File.directory?(entry)
-      delete_files_and_directories(entry)
-      Dir.rmdir(entry) if Dir.empty?(entry)
-    else
-      File.delete(entry)
-    end
+def remove_folder(folder_path)
+  begin
+    FileUtils.rm_rf(folder_path)
+    puts "Folder '#{folder_path}' has been successfully removed."
+  rescue Errno::ENOENT
+    puts "Folder '#{folder_path}' does not exist."
+  rescue => e
+    puts "An error occurred while removing the folder '#{folder_path}': #{e.message}"
   end
 end
 
@@ -552,8 +550,7 @@ if $is_sign_available or $is_automatic_sign
 end
 
 should_delete = ENV['AC_DELETE_ARCHIVE'] == 'true'
-puts "Should delete: #{should_delete} ENV #{ENV['AC_DELETE_ARCHIVE']}"
-delete_files_and_directories($archive_path) if should_delete
+remove_folder($archive_path) if should_delete
 
 ###############################################################
 
