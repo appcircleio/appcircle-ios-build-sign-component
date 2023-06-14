@@ -512,7 +512,9 @@ def generate_archive_metadata()
 end
 
 def delete_files_and_directories(folder_path)
+  puts "Deleting #{folder_path}"
   Dir.glob("#{folder_path}/*").each do |entry|
+    puts "Entry #{entry}"
     if File.directory?(entry)
       delete_files_and_directories(entry)
       Dir.rmdir(entry) if Dir.empty?(entry)
@@ -550,6 +552,7 @@ if $is_sign_available or $is_automatic_sign
 end
 
 should_delete = ENV['AC_DELETE_ARCHIVE'] == 'true'
+puts "Should delete: #{should_delete} ENV #{ENV['AC_DELETE_ARCHIVE']}"
 delete_files_and_directories($archive_path) if should_delete
 
 ###############################################################
