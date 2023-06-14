@@ -23,6 +23,8 @@ Optional Input Variables
 - `$AC_UPLOAD_BITCODE_FOR_EXPORT`: For App Store exports, should the package include bitcode?. Available options YES, NO.
 - `$AC_UPLOAD_SYMBOLS_FOR_EXPORT`: For App Store exports, should the package include symbols?. Available options YES, NO.
 - `$AC_ICLOUD_CONTAINER_ENVIRONMENT_FOR_EXPORT`: For non-App Store exports, if the app is using CloudKit, this configures the "com.apple.developer.icloud-container-environment" entitlement. Available options Development and Production.
+- `$AC_DELETE_ARCHIVE`: Delete `build.xcarchive` file after creating ipa file..
+
 
 Output Variables
 - `$AC_ARCHIVE_PATH`: Archive path.

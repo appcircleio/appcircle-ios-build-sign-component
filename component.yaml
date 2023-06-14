@@ -93,6 +93,14 @@ inputs:
   title: Export ICloud Container Environment
   description: For non-App Store exports, if the app is using CloudKit, this configures the "com.apple.developer.icloud-container-environment" entitlement. Available options Development and Production.
   helpText:
+- key: "AC_DELETE_ARCHIVE"
+  isRequired: false
+  editorType: select
+  defaultValue: "false"
+  options: "false,true"
+  title: Delete Archive
+  description: Delete `build.xcarchive` file after creating ipa file.
+  helpText:
 outputs:
 - key: "AC_ARCHIVE_PATH"
   title: Archive Path

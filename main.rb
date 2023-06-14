@@ -511,6 +511,17 @@ def generate_archive_metadata()
   end
 end
 
+def delete_files_and_directories(folder_path)
+  Dir.glob("#{folder_path}/*").each do |entry|
+    if File.directory?(entry)
+      delete_files_and_directories(entry)
+      Dir.rmdir(entry) if Dir.empty?(entry)
+    else
+      File.delete(entry)
+    end
+  end
+end
+
 ###############################################################
 
 if $is_automatic_sign
@@ -537,6 +548,9 @@ if $is_sign_available or $is_automatic_sign
   export_options = generate_export_options()
   export_archive(export_options)
 end
+
+should_delete = ENV['AC_DELETE_ARCHIVE'] == 'true'
+delete_files_and_directories($archive_path) if should_delete
 
 ###############################################################
 
