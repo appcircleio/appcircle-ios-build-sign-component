@@ -119,6 +119,13 @@ def run_command(command,skip_abort)
   end
 end
 
+def run_command_simple(command)
+  return if system(command)
+
+  abort_script("@@[error] Unexpected exit with code #{$CHILD_STATUS.exitstatus}.
+    Check logs for details.")
+end
+
 def abort_script(error)
   abort("#{error}")
 end
@@ -394,7 +401,7 @@ def export_archive(export_options)
     command_export.concat(" ")
     command_export.concat("-authenticationKeyIssuerID #{issuer_id}")
   end
-  run_command(command_export,false);
+  run_command_simple(command_export)
 
   begin
     #Write Environment Variable
@@ -460,8 +467,7 @@ def archive()
     command.concat(" -project \"#{$project_full_path}\"")
   end
 
-
-  run_command(command,false)
+  run_command_simple(command)
 end
 
 def get_bundle_identifiers_and_embedded_provisioning_profiles(path)
