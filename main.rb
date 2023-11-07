@@ -120,6 +120,7 @@ def run_command(command,skip_abort)
 end
 
 def run_command_simple(command)
+  puts "@@[command] #{command}"
   return if system(command)
 
   abort_script("@@[error] Unexpected exit with code #{$CHILD_STATUS.exitstatus}.
