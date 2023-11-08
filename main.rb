@@ -7,6 +7,7 @@ require 'fileutils'
 require 'uri'
 require 'xcodeproj'
 require 'securerandom'
+require 'English'
 
 ###### Enviroment Variable Check
 def env_has_key(key)
@@ -117,6 +118,18 @@ def run_command(command,skip_abort)
       abort_script(stderr_str)
     end
   end
+end
+
+def run_command_simple(command)
+  puts "@@[command] #{command}"
+  stderr_file = "#{ENV['AC_TEMP_DIR']}/.command.stderr.log"
+  command.concat(' 2>')
+  command.concat(stderr_file)
+  return if system(command)
+
+  exit_code = $CHILD_STATUS.exitstatus
+  system("cat #{stderr_file}")
+  abort_script("@@[error] Unexpected exit with code #{exit_code}. Check logs for details.")
 end
 
 def abort_script(error)
@@ -394,7 +407,7 @@ def export_archive(export_options)
     command_export.concat(" ")
     command_export.concat("-authenticationKeyIssuerID #{issuer_id}")
   end
-  run_command(command_export,false);
+  run_command_simple(command_export)
 
   begin
     #Write Environment Variable
@@ -460,8 +473,7 @@ def archive()
     command.concat(" -project \"#{$project_full_path}\"")
   end
 
-
-  run_command(command,false)
+  run_command_simple(command)
 end
 
 def get_bundle_identifiers_and_embedded_provisioning_profiles(path)
