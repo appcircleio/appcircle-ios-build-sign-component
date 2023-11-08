@@ -7,6 +7,7 @@ require 'fileutils'
 require 'uri'
 require 'xcodeproj'
 require 'securerandom'
+require 'English'
 
 ###### Enviroment Variable Check
 def env_has_key(key)
