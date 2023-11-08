@@ -127,9 +127,9 @@ def run_command_simple(command)
   command.concat(stderr_file)
   return if system(command)
 
+  exit_code = $CHILD_STATUS.exitstatus
   system("cat #{stderr_file}")
-  abort_script("@@[error] Unexpected exit with code #{$CHILD_STATUS.exitstatus}.
-    Check logs for details.")
+  abort_script("@@[error] Unexpected exit with code #{exit_code}. Check logs for details.")
 end
 
 def abort_script(error)
