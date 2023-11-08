@@ -121,8 +121,12 @@ end
 
 def run_command_simple(command)
   puts "@@[command] #{command}"
+  stderr_file = "#{ENV['AC_TEMP_DIR']}/.command.stderr.log"
+  command.concat(' 2>')
+  command.concat(stderr_file)
   return if system(command)
 
+  system("cat #{stderr_file}")
   abort_script("@@[error] Unexpected exit with code #{$CHILD_STATUS.exitstatus}.
     Check logs for details.")
 end
