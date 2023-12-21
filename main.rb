@@ -170,6 +170,10 @@ def parse_certificate()
     x += 2
   end
 
+  if $teamid_for_export.nil?
+    $teamid_for_export = $code_sign_development_team
+  end
+
   return cert_props
 end
 
@@ -320,6 +324,7 @@ def generate_export_options()
   provisioning_profile_object = {}
   application_profile_plist = nil
   provisioning_profiles.each_with_index do |data, index|
+    next if $is_automatic_sign
     command_provisioning_plist = "security cms -D -i \"#{data}\" > \"#{$temporary_path}/_#{index}#{expOptProvisioningProfilePlist}\""
     run_command(command_provisioning_plist,false);
   
@@ -340,18 +345,20 @@ def generate_export_options()
   end
   export_options['destination'] = :export
   
-  if $method_for_export == 'auto-detect'
-    if application_profile_plist['Entitlements']['get-task-allow']
-      export_options['method'] = "development"
-    elsif application_profile_plist['ProvisionsAllDevices']
-      export_options['method'] = "enterprise"
-    elsif application_profile_plist['ProvisionedDevices']
-      export_options['method'] = "ad-hoc"
+  if $is_sign_available
+    if $method_for_export == 'auto-detect'
+      if application_profile_plist['Entitlements']['get-task-allow']
+        export_options['method'] = "development"
+      elsif application_profile_plist['ProvisionsAllDevices']
+        export_options['method'] = "enterprise"
+      elsif application_profile_plist['ProvisionedDevices']
+        export_options['method'] = "ad-hoc"
+      else
+        export_options['method'] = "app-store"
+      end
     else
-      export_options['method'] = "app-store"
+      export_options['method'] = $method_for_export
     end
-  else
-    export_options['method'] = $method_for_export
   end
 
   if $is_automatic_sign
@@ -393,19 +400,13 @@ def generate_export_options()
 end
 
 def export_archive(export_options)
-  command_export = "xcodebuild -exportArchive -archivePath \"#$archive_path\" -exportPath \"#$output_path\" -exportOptionsPlist \"#{export_options}\""
   if $is_automatic_sign
     key_path = env_has_key("AC_AUTOSIGN_CRED_PATH")
     key_id = env_has_key("AC_AUTOSIGN_KEY")
     issuer_id = env_has_key("AC_AUTOSIGN_ISSUER_ID")
-    command_export.concat(" ")
-    command_export.concat("-allowProvisioningUpdates")
-    command_export.concat(" ")
-    command_export.concat("-authenticationKeyPath #{key_path}")
-    command_export.concat(" ")
-    command_export.concat("-authenticationKeyID #{key_id}")
-    command_export.concat(" ")
-    command_export.concat("-authenticationKeyIssuerID #{issuer_id}")
+    command_export = "xcodebuild -allowProvisioningUpdates -authenticationKeyPath #{key_path} -authenticationKeyID #{key_id} -authenticationKeyIssuerID #{issuer_id} -exportArchive -archivePath \"#$archive_path\" -exportPath \"#$output_path\" -exportOptionsPlist \"#{export_options}\""
+  else
+    command_export = "xcodebuild -exportArchive -archivePath \"#$archive_path\" -exportPath \"#$output_path\" -exportOptionsPlist \"#{export_options}\""
   end
   run_command_simple(command_export)
 
@@ -422,24 +423,18 @@ end
 ### Archive Functions
 def archive()
   extname = File.extname($project_path)
-  command = "xcodebuild -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -destination \"generic/platform=iOS\""
-  
-  if $is_sign_available
-    command.concat(" ")
-    command.concat("CODE_SIGN_STYLE=Manual")
-    command.concat(" ")
-  elsif $is_automatic_sign
+  if $is_automatic_sign
     key_path = env_has_key("AC_AUTOSIGN_CRED_PATH")
     key_id = env_has_key("AC_AUTOSIGN_KEY")
     issuer_id = env_has_key("AC_AUTOSIGN_ISSUER_ID")
+    command = "xcodebuild -allowProvisioningUpdates -authenticationKeyPath #{key_path} -authenticationKeyID #{key_id} -authenticationKeyIssuerID #{issuer_id} -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -configuration Debug -destination \"generic/platform=iOS\""
+  else
+    command = "xcodebuild -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -destination \"generic/platform=iOS\""
+  end
+
+  if $is_sign_available
     command.concat(" ")
-    command.concat("-allowProvisioningUpdates")
-    command.concat(" ")
-    command.concat("-authenticationKeyPath #{key_path}")
-    command.concat(" ")
-    command.concat("-authenticationKeyID #{key_id}")
-    command.concat(" ")
-    command.concat("-authenticationKeyIssuerID #{issuer_id}")
+    command.concat("CODE_SIGN_STYLE=Manual")
     command.concat(" ")
   else
     command.concat(" ")
