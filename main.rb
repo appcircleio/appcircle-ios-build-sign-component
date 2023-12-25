@@ -427,7 +427,7 @@ def archive()
     key_path = env_has_key("AC_AUTOSIGN_CRED_PATH")
     key_id = env_has_key("AC_AUTOSIGN_KEY")
     issuer_id = env_has_key("AC_AUTOSIGN_ISSUER_ID")
-    command = "xcodebuild -allowProvisioningUpdates -authenticationKeyPath #{key_path} -authenticationKeyID #{key_id} -authenticationKeyIssuerID #{issuer_id} -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -configuration Debug -destination \"generic/platform=iOS\""
+    command = "xcodebuild -allowProvisioningUpdates -authenticationKeyPath #{key_path} -authenticationKeyID #{key_id} -authenticationKeyIssuerID #{issuer_id} -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -destination \"generic/platform=iOS\""
   else
     command = "xcodebuild -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -destination \"generic/platform=iOS\""
   end
