@@ -436,6 +436,10 @@ def archive()
     command.concat(" ")
     command.concat("CODE_SIGN_STYLE=Manual")
     command.concat(" ")
+  elsif $is_automatic_sign
+    command.concat(" ")
+    command.concat("CODE_SIGN_IDENTITY=\"\" ")
+    command.concat(" ")
   else
     command.concat(" ")
     command.concat("CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO")
