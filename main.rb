@@ -323,16 +323,17 @@ def generate_export_options()
 
   provisioning_profile_object = {}
   application_profile_plist = nil
-  provisioning_profiles.each_with_index do |data, index|
-    next if $is_automatic_sign
-    command_provisioning_plist = "security cms -D -i \"#{data}\" > \"#{$temporary_path}/_#{index}#{expOptProvisioningProfilePlist}\""
-    run_command(command_provisioning_plist,false);
-  
-    provisioning_plist = Plist.parse_xml("#{$temporary_path}/_#{index}#{expOptProvisioningProfilePlist}")
-    if index == 0
-      application_profile_plist = provisioning_plist
+  unless $is_automatic_sign
+    provisioning_profiles.each_with_index do |data, index|
+      command_provisioning_plist = "security cms -D -i \"#{data}\" > \"#{$temporary_path}/_#{index}#{expOptProvisioningProfilePlist}\""
+      run_command(command_provisioning_plist,false);
+
+      provisioning_plist = Plist.parse_xml("#{$temporary_path}/_#{index}#{expOptProvisioningProfilePlist}")
+      if index == 0
+        application_profile_plist = provisioning_plist
+      end
+      provisioning_profile_object[bundle_identifiers[index]] = provisioning_plist['UUID']
     end
-    provisioning_profile_object[bundle_identifiers[index]] = provisioning_plist['UUID']
   end
   export_options['provisioningProfiles'] = provisioning_profile_object
   #####################
