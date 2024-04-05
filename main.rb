@@ -421,6 +421,10 @@ def export_archive(export_options)
   end
 end
 
+def is_no_sign
+  return !$is_automatic_sign && !$is_sign_available
+end
+
 ### Archive Functions
 def archive()
   extname = File.extname($project_path)
@@ -437,11 +441,9 @@ def archive()
     command.concat(" ")
     command.concat("CODE_SIGN_STYLE=Manual")
     command.concat(" ")
-  elsif $is_automatic_sign
-    command.concat(" ")
-    command.concat("CODE_SIGN_IDENTITY=\"\" ")
-    command.concat(" ")
-  else
+  end
+
+  if is_no_sign
     command.concat(" ")
     command.concat("CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO")
     command.concat(" ")
