@@ -138,7 +138,7 @@ end
 
 ###### Import Certificate & Provisioning
 def parse_certificate
-  cert_string = $certificates.force_encoding('UTF-8') # Ensure UTF-8 encoding
+  cert_string = $certificates.dup.force_encoding('UTF-8') # Ensure UTF-8 encoding with a duplicate
 
   cert_props = {}
   split_cert_string = cert_string.split("|")
