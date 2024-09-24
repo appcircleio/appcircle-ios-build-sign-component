@@ -138,7 +138,7 @@ end
 
 ###### Import Certificate & Provisioning
 def parse_certificate
-  cert_string = $certificates.dup.force_encoding('UTF-8') # Ensure UTF-8 encoding with a duplicate
+  cert_string = $certificates
 
   cert_props = {}
   split_cert_string = cert_string.split("|")
@@ -156,7 +156,8 @@ def parse_certificate
       raise stderr_str
     end
 
-    certificate_description_string.force_encoding('UTF-8') # Force UTF-8 encoding again after reading from the command output
+    certificate_description_string = certificate_description_string.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
+    certificate_description_string = certificate_description_string.gsub(/\\x([0-9A-Fa-f]{2})/) { |match| [$1.hex].pack('C') }
 
     certificate_description_splitted = certificate_description_string.split("/")
     certificate_description_splitted.each do |item|
