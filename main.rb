@@ -137,7 +137,7 @@ def abort_script(error)
 end
 
 ###### Import Certificate & Provisioning
-def parse_certificate()
+def parse_certificate
   cert_string = $certificates
 
   cert_props = {}
@@ -148,14 +148,19 @@ def parse_certificate()
   while x < split_cert_length
     certificate = "#{split_cert_string[x+1]}"
     password = "#{split_cert_string[x]}"
+    
     command_read_certificate = "openssl pkcs12 -in #{certificate} -nokeys -passin pass:\"#{password}\" | openssl x509 -noout -subject"
+    
     certificate_description_string, stderr_str, status = Open3.capture3(command_read_certificate)
     unless status.success?
       raise stderr_str
     end
 
+    certificate_description_string = certificate_description_string.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
+    certificate_description_string = certificate_description_string.gsub(/\\x([0-9A-Fa-f]{2})/) { |match| [$1.hex].pack('C') }
+
     certificate_description_splitted = certificate_description_string.split("/")
-    certificate_description_splitted.each { |item| 
+    certificate_description_splitted.each do |item|
       item_splitted = item.split("=")
       key = item_splitted[0]
       value = item_splitted[1]
@@ -165,8 +170,12 @@ def parse_certificate()
       elsif key == "OU"
         $code_sign_development_team = value
       end
+    end
+
+    cert_props[certificate] = { 
+      :code_sign_identity => $code_sign_identity, 
+      :code_sign_development_team => $code_sign_development_team 
     }
-    cert_props["#{certificate}"] = { :code_sign_identity => "#{$code_sign_identity}", :code_sign_development_team => "#{$code_sign_development_team}"}
     x += 2
   end
 
