@@ -21,6 +21,13 @@ inputs:
   title: Scheme
   description: Specifies the project scheme for build.
   helpText:
+- key: "AC_CLEAN_BUILD"
+  title: Clean Build
+  defaultValue: "true"
+  options: "true,false"
+  editorType: select
+  description: "Adds the clean parameter to xcodebuild command. When true, builds from a clean state. When false, performs incremental build without cleaning."
+  helpText:
 - key: "AC_ARCHIVE_FLAGS"
   defaultValue: "$AC_XCODE_BUILD_EXTRA_FLAGS"
   isRequired: false
