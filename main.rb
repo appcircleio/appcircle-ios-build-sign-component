@@ -21,6 +21,8 @@ $project_path = env_has_key("AC_PROJECT_PATH")
 $scheme = env_has_key("AC_SCHEME")
 $repository_path = ENV["AC_REPOSITORY_DIR"]
 
+$clean_build = ENV["AC_CLEAN_BUILD"].to_s != "false"
+
 $project_full_path = $repository_path ? (Pathname.new $repository_path).join($project_path) : $project_path
 
 $configuration_name = (ENV["AC_CONFIGURATION_NAME"] != nil && ENV["AC_CONFIGURATION_NAME"] !="") ? ENV["AC_CONFIGURATION_NAME"] : nil
@@ -437,13 +439,14 @@ end
 ### Archive Functions
 def archive()
   extname = File.extname($project_path)
+  clean_parameter = $clean_build ? 'clean' : ''
   if $is_automatic_sign
     key_path = env_has_key("AC_AUTOSIGN_CRED_PATH")
     key_id = env_has_key("AC_AUTOSIGN_KEY")
     issuer_id = env_has_key("AC_AUTOSIGN_ISSUER_ID")
-    command = "xcodebuild -allowProvisioningUpdates -authenticationKeyPath #{key_path} -authenticationKeyID #{key_id} -authenticationKeyIssuerID #{issuer_id} -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -destination \"generic/platform=iOS\""
+    command = "xcodebuild -allowProvisioningUpdates -authenticationKeyPath #{key_path} -authenticationKeyID #{key_id} -authenticationKeyIssuerID #{issuer_id} -scheme \"#{$scheme}\" #{$clean_parameter} archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -destination \"generic/platform=iOS\""
   else
-    command = "xcodebuild -scheme \"#{$scheme}\" clean archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -destination \"generic/platform=iOS\""
+    command = "xcodebuild -scheme \"#{$scheme}\" #{$clean_parameter} archive -archivePath \"#{$archive_path}\" -derivedDataPath \"#{$temporary_path}/DerivedData\" -destination \"generic/platform=iOS\""
   end
 
   if $is_sign_available
