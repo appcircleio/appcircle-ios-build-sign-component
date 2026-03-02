@@ -21,7 +21,7 @@ $project_path = env_has_key("AC_PROJECT_PATH")
 $scheme = env_has_key("AC_SCHEME")
 $repository_path = ENV["AC_REPOSITORY_DIR"]
 
-$clean_build = ENV["AC_CLEAN_BUILD"].to_s != "false"
+$clean_build = env_has_key("AC_CLEAN_BUILD")
 
 $project_full_path = $repository_path ? (Pathname.new $repository_path).join($project_path) : $project_path
 
