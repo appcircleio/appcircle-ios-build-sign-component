@@ -30,3 +30,14 @@ Output Variables
 - `$AC_ARCHIVE_PATH`: Archive path.
 - `$AC_ARCHIVE_METADATA_PATH`: Archive metadata path.
 - `$AC_EXPORT_DIR`: Specifies the directory that contains ipa, exportOptions.plist, and other exported files.
+
+
+## Running tests
+
+Requires [RSpec](https://rspec.info) gem and Ruby standard library (Coverage, REXML). No Gemfile or Bundler needed.
+
+```bash
+ruby test/test_main.rb
+```
+
+A pass/fail summary is printed at the end of each run.
