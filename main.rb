@@ -5,7 +5,11 @@ require 'pathname'
 require 'plist'
 require 'fileutils'
 require 'uri'
-require 'xcodeproj'
+begin
+  require 'xcodeproj'
+rescue LoadError
+  # xcodeproj not available; Xcodeproj-dependent functions will fail at runtime
+end
 require 'securerandom'
 require 'English'
 
@@ -13,6 +17,8 @@ require 'English'
 def env_has_key(key)
 	return (ENV[key] != nil && ENV[key] !="") ? ENV[key] : abort("Missing #{key}.")
 end
+
+if __FILE__ == $PROGRAM_NAME
 
 $temporary_path = env_has_key("AC_TEMP_DIR")
 $temporary_path += "/appcircle_export_archive"
@@ -97,6 +103,8 @@ end
 
 # Certificate and provision profile map
 $compatible_sign_files = {}
+
+end # if __FILE__ == $PROGRAM_NAME
 
 ###### Run Command Function
 def run_command(command,skip_abort)
@@ -550,6 +558,8 @@ end
 
 ###############################################################
 
+if __FILE__ == $PROGRAM_NAME
+
 if $is_automatic_sign
   $certificate_properties = parse_certificate()
 end
@@ -578,8 +588,6 @@ end
 should_delete = ENV['AC_DELETE_ARCHIVE'] == 'true'
 remove_folder($archive_path) if should_delete
 
-###############################################################
-
 ### Write Environment Variable
 open(ENV['AC_ENV_FILE_PATH'], 'a') { |f|
   f.puts "AC_ARCHIVE_METADATA_PATH=#{$metadata_path}"
@@ -587,3 +595,5 @@ open(ENV['AC_ENV_FILE_PATH'], 'a') { |f|
 }
 
 exit 0
+
+end # if __FILE__ == $PROGRAM_NAME

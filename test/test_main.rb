@@ -149,97 +149,8 @@ class ReadableFormatter < RSpec::Core::Formatters::BaseFormatter
   end
 end
 
-# ─── Inline Function Definitions (mirrored from main.rb) ──────────────────────
-# main.rb runs top-level code (xcodebuild, env checks) on require, so
-# testable functions are defined verbatim here for isolated unit testing.
-
-def env_has_key(key)
-  (ENV[key] != nil && ENV[key] != "") ? ENV[key] : abort("Missing #{key}.")
-end
-
-def abort_script(error)
-  abort("#{error}")
-end
-
-def run_command(command, skip_abort)
-  puts "@@[command] #{command}"
-  status      = nil
-  stdout_str  = nil
-  stderr_str  = nil
-  Open3.popen3(command) do |_stdin, stdout, stderr, wait_thr|
-    stdout.each_line { |line| puts line }
-    stdout_str = stdout.read
-    stderr_str = stderr.read
-    status     = wait_thr.value
-  end
-  unless status.success?
-    if skip_abort
-      puts stderr_str
-    else
-      abort_script(stderr_str)
-    end
-  end
-end
-
-def run_command_simple(command)
-  command = command.dup   # guard against frozen string literals in tests
-  puts "@@[command] #{command}"
-  stderr_file = "#{ENV['AC_TEMP_DIR']}/.command.stderr.log"
-  command.concat(' 2>')
-  command.concat(stderr_file)
-  return if system(command)
-
-  exit_code = $CHILD_STATUS.exitstatus
-  system("cat #{stderr_file}")
-  abort_script("@@[error] Unexpected exit with code #{exit_code}. Check logs for details.")
-end
-
-def is_no_sign
-  !$is_automatic_sign && !$is_sign_available
-end
-
-def remove_folder(folder_path)
-  begin
-    FileUtils.rm_rf(folder_path)
-    puts "Folder '#{folder_path}' has been successfully removed."
-  rescue Errno::ENOENT
-    puts "Folder '#{folder_path}' does not exist."
-  rescue => e
-    puts "An error occurred while removing the folder '#{folder_path}': #{e.message}"
-  end
-end
-
-def get_bundle_identifiers_and_embedded_provisioning_profiles(path)
-  identifiers                    = []
-  embedded_provisioning_profiles = []
-  Dir.chdir(path) do
-    Dir.glob('*').select do |product|
-      plist        = "#{product}/Info.plist"
-      command_uuid = "/usr/libexec/PlistBuddy -c \"Print CFBundleIdentifier\" \"#{plist}\""
-      identifier   = `#{command_uuid}`.chomp
-      identifiers << identifier
-
-      if File.file?("#{product}/embedded.mobileprovision")
-        embedded_provisioning_profiles << "#{Dir.pwd}/#{product}/embedded.mobileprovision"
-      else
-        embedded_provisioning_profiles << nil
-      end
-
-      if File.directory?("#{product}/PlugIns")
-        ids, profiles = get_bundle_identifiers_and_embedded_provisioning_profiles("#{product}/PlugIns")
-        identifiers.concat(ids)
-        embedded_provisioning_profiles.concat(profiles)
-      end
-
-      if File.directory?("#{product}/Watch")
-        ids, profiles = get_bundle_identifiers_and_embedded_provisioning_profiles("#{product}/Watch")
-        identifiers.concat(ids)
-        embedded_provisioning_profiles.concat(profiles)
-      end
-    end
-  end
-  return identifiers, embedded_provisioning_profiles
-end
+# ─── Load main.rb (top-level execution is guarded by __FILE__ == $PROGRAM_NAME)
+require_relative '../main.rb'
 
 # Mirrors the xcodebuild command assembled in archive() in main.rb.
 # Returns the command string instead of running it.
@@ -356,55 +267,6 @@ end
 
 # ─── Tests ────────────────────────────────────────────────────────────────────
 
-# ─── 1. Library Validation ────────────────────────────────────────────────────
-RSpec.describe 'Library validation' do
-  context 'standard libraries required by main.rb' do
-    %w[yaml json open3 pathname fileutils uri securerandom English].each do |lib|
-      it "loads '#{lib}' without error" do
-        expect { require lib }.not_to raise_error
-      end
-    end
-  end
-
-  context 'third-party libraries' do
-    it "loads 'plist' gem" do
-      expect { require 'plist' }.not_to raise_error
-    end
-
-    if XCODEPROJ_AVAILABLE
-      it "loads 'xcodeproj' gem" do
-        expect { require 'xcodeproj' }.not_to raise_error
-      end
-    else
-      it "xcodeproj gem (not installed – skipped)" do
-        skip 'xcodeproj gem is not installed in this environment'
-      end
-    end
-  end
-
-  context 'module availability after loading' do
-    it 'Open3 is accessible' do
-      expect(defined?(Open3)).to eq('constant')
-    end
-
-    it 'FileUtils is accessible' do
-      expect(defined?(FileUtils)).to eq('constant')
-    end
-
-    it 'Pathname is accessible' do
-      expect(defined?(Pathname)).to eq('constant')
-    end
-
-    it 'JSON is accessible' do
-      expect(defined?(JSON)).to eq('constant')
-    end
-
-    it 'SecureRandom is accessible' do
-      expect(defined?(SecureRandom)).to eq('constant')
-    end
-  end
-end
-
 # ─── 2. env_has_key ───────────────────────────────────────────────────────────
 RSpec.describe '#env_has_key' do
   around do |example|
@@ -438,13 +300,17 @@ RSpec.describe '#env_has_key' do
 
     it 'abort message includes the key name' do
       ENV.delete('_AC_TEST_KEY')
+      captured = StringIO.new
+      original_stderr = $stderr
+      $stderr = captured
       begin
         env_has_key('_AC_TEST_KEY')
       rescue SystemExit
-        # SystemExit raised by abort() – message was printed to $stderr
+        # expected
+      ensure
+        $stderr = original_stderr
       end
-      # The error always reaches here – verifying it exits is sufficient
-      expect(true).to be true
+      expect(captured.string).to match(/_AC_TEST_KEY/)
     end
   end
 
@@ -553,6 +419,14 @@ end
 
 # ─── 6. is_no_sign ────────────────────────────────────────────────────────────
 RSpec.describe '#is_no_sign' do
+  around do |example|
+    saved_auto = $is_automatic_sign
+    saved_sign = $is_sign_available
+    example.run
+    $is_automatic_sign = saved_auto
+    $is_sign_available = saved_sign
+  end
+
   context 'positive path – no signing configured' do
     it 'returns true when both flags are false' do
       $is_automatic_sign = false
@@ -3138,115 +3012,6 @@ RSpec.describe 'Command string correctness & parameter validation' do
   end
 end
 
-# ─── Coverage Report ──────────────────────────────────────────────────────────
-CORE_COVERAGE_TABLE = [
-  # [ function / section,                                  covered, total ]
-  ['env_has_key',                                                3,      3],
-  ['abort_script',                                              3,      3],
-  ['run_command',                                              22,     22],
-  ['run_command_simple',                                       11,     11],
-  ['is_no_sign',                                                3,      3],
-  ['remove_folder',                                            10,     10],
-  ['get_bundle_identifiers (incl. PlugIns/Watch)',             31,     31],
-  ['archive command construction',                             40,     52],
-  ['export_archive command construction',                      15,     20],
-  ['generate_archive_metadata',                                12,     14],
-  ['parse_certificate – string & subject parsing',            38,     48],
-  ['parse_provisioning_profile – string pairing logic',       16,     34],
-  ['ENV top-level execution (subprocess)',                     28,     36],
-  ['update_build_settings (mock-based)',                       55,     69],
-  ['get_project_path – non-workspace + scheme parsing',       18,     27],
-  ['generate_export_options – option-building logic',         60,     87],
-  ['command format & execution (openssl/security/PlistBuddy/xcodebuild)', 32, 38],
-  ['command output parsing & error handling (run_command / fake binary)', 42, 48],
-  ['command string correctness & parameter validation',                   52, 56],
-].freeze
-
-XCODEPROJ_COVERAGE_TABLE = [
-  # Lines not reachable without a real .xcodeproj on disk (file I/O + security cms)
-  ['update_build_settings – plist file I/O path',              0,      0],
-  ['get_project_path – xcodebuild -list call path',            0,      0],
-  ['generate_export_options – security cms / plist write',     0,      0],
-].freeze
-
-def print_coverage_table(title, table, col_fn, col_lines)
-  divider     = "\e[90m#{'═' * 76}\e[0m"
-  sub_divider = "\e[90m#{'─' * 76}\e[0m"
-
-  puts "\n#{divider}"
-  puts "  \e[1m#{title}\e[0m"
-  puts sub_divider
-  printf "  %-#{col_fn}s  %#{col_lines}s  %s\n", 'Function / Section', 'Lines', 'Coverage'
-  puts sub_divider
-
-  total_cov = 0
-  total_tot = 0
-
-  table.each do |fn, covered, total|
-    total_cov += covered
-    total_tot += total
-    pct        = total.positive? ? (covered * 100.0 / total).round(1) : 100.0
-    color      = pct >= 100 ? "\e[32m" : pct >= 70 ? "\e[33m" : "\e[31m"
-    bar_filled = (pct / 5).round
-    bar        = "\e[32m" + '█' * bar_filled + "\e[90m" + '░' * (20 - bar_filled) + "\e[0m"
-    printf "  %-#{col_fn}s  %#{col_lines}s  %s %s%s%%\e[0m\n",
-           fn, "#{covered}/#{total}", bar, color, pct
-  end
-
-  puts sub_divider
-  pct        = total_tot.positive? ? (total_cov * 100.0 / total_tot).round(1) : 100.0
-  color      = pct >= 70 ? "\e[32;1m" : "\e[31;1m"
-  bar_filled = (pct / 5).round
-  bar        = "\e[32m" + '█' * bar_filled + "\e[90m" + '░' * (20 - bar_filled) + "\e[0m"
-  printf "  %-#{col_fn}s  %#{col_lines}s  %s %s%s%%\e[0m\n",
-         'SUBTOTAL', "#{total_cov}/#{total_tot}", bar, color, pct
-  puts divider
-  [total_cov, total_tot, pct]
-end
-
-def print_coverage_report
-  col_fn    = 52
-  col_lines = 12
-
-  core_cov, core_tot, core_pct =
-    print_coverage_table('Coverage Report – Core Functions (testable in isolation)',
-                         CORE_COVERAGE_TABLE, col_fn, col_lines)
-
-  xcodeproj_cov, xcodeproj_tot, _xcodeproj_pct =
-    print_coverage_table('Coverage Report – Xcodeproj-dependent Functions (excluded from threshold)',
-                         XCODEPROJ_COVERAGE_TABLE, col_fn, col_lines)
-
-  divider = "\e[90m#{'═' * 76}\e[0m"
-  sub_div = "\e[90m#{'─' * 76}\e[0m"
-  grand_cov = core_cov + xcodeproj_cov
-  grand_tot = core_tot + xcodeproj_tot
-  grand_pct = grand_tot.positive? ? (grand_cov * 100.0 / grand_tot).round(1) : 100.0
-
-  puts "\n#{divider}"
-  puts "  \e[1mCoverage Summary\e[0m"
-  puts sub_div
-  printf "  %-30s  %12s  %s\n", 'Scope', 'Lines', 'Coverage'
-  puts sub_div
-
-  [
-    ['Core (testable)',         core_cov,       core_tot,       core_pct],
-    ['Xcodeproj-dependent',     xcodeproj_cov,  xcodeproj_tot,  _xcodeproj_pct],
-    ['Grand Total',             grand_cov,      grand_tot,      grand_pct],
-  ].each do |label, cov, tot, pct|
-    color      = pct >= 70 ? "\e[32;1m" : "\e[31;1m"
-    bar_filled = (pct / 5).round
-    bar        = "\e[32m" + '█' * bar_filled + "\e[90m" + '░' * (20 - bar_filled) + "\e[0m"
-    printf "  %-30s  %12s  %s %s%s%%\e[0m\n", label, "#{cov}/#{tot}", bar, color, pct
-  end
-
-  puts sub_div
-  threshold_label = core_pct >= 70 \
-    ? "\e[32;1m✔  PASS – core coverage #{core_pct}% ≥ 70%\e[0m" \
-    : "\e[31;1m✖  FAIL – core coverage #{core_pct}% < 70%\e[0m"
-  puts "\n  Threshold (core functions only): #{threshold_label}"
-  puts divider
-end
-
 # ─── Runner ───────────────────────────────────────────────────────────────────
 if __FILE__ == $PROGRAM_NAME
   RSpec.configure do |config|
@@ -3255,7 +3020,5 @@ if __FILE__ == $PROGRAM_NAME
     config.order  = :defined
   end
 
-  exit_code = RSpec::Core::Runner.run(['--order', 'defined'])
-  print_coverage_report
-  exit exit_code
+  exit RSpec::Core::Runner.run(['--order', 'defined'])
 end

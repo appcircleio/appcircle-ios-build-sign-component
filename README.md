@@ -40,4 +40,4 @@ Requires [RSpec](https://rspec.info) gem and Ruby standard library (Coverage, RE
 ruby test/test_main.rb
 ```
 
-A coverage report is printed at the end of each run.
+A pass/fail summary is printed at the end of each run.
